@@ -5,9 +5,7 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync, statSync } from 'node:fs';
+import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const dest = join(process.env.MAKEFUN_OUTPUT_DIR ?? '/output', 'entry.png');
-copyFileSync(new URL('./entry.png', import.meta.url), dest);
-console.log(`copied entry.png (${statSync(dest).size} bytes) to ${dest}`);
+copyFileSync(new URL('./entry.png', import.meta.url), join(process.env.MAKEFUN_OUTPUT_DIR ?? '/output', 'entry.png'));
