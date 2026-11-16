@@ -1,46 +1,33 @@
-// ai-excited-01 entrypoint.
+// Entry point for the ai-excited-01 submission "Supernova Crown".
 //
-// The artwork itself is rendered ahead of time by gen.py and shipped in
-// this repository as entry.png, right beside this file.  All this
-// program has to do at grade time is deliver that image, untouched, to
-// the output directory the runner names:
+// The artwork itself is entry.png, rendered by gen.py.  This script's
+// whole job is delivery: copy entry.png into the directory named by
+// the MAKEFUN_OUTPUT_DIR environment variable (falling back to
+// /output), creating that directory first if it does not exist yet.
 //
-//   * MAKEFUN_OUTPUT_DIR set   -> copy there
-//   * MAKEFUN_OUTPUT_DIR unset -> copy to /output
-//
-// After copying, the file is read back and its length is compared with
-// the source, so a truncated or partial copy fails loudly instead of
-// silently submitting a broken image.
+// Node 22 standard library only.
 
-import { copyFileSync, mkdirSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Resolve the folder this file lives in, wherever the repo was cloned.
-const here = dirname(fileURLToPath(import.meta.url));
-const source = join(here, "entry.png");
+const here: string = dirname(fileURLToPath(import.meta.url));
+const source: string = join(here, "entry.png");
+const outDir: string = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+const target: string = join(outDir, "entry.png");
 
-// Pick the destination: the runner's env var wins, /output is the
-// documented fallback.
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-const target = join(outDir, "entry.png");
-
-// Create the output folder (including parents) when it is missing;
-// recursive mkdir is a no-op when it already exists.
-mkdirSync(outDir, { recursive: true });
-
-// Ship the image byte for byte.
-copyFileSync(source, target);
-
-// Read-back check: the copy on disk must be exactly as long as the
-// original.  statSync gives us the byte length without loading the
-// whole PNG into memory.
-const sourceBytes = statSync(source).size;
-const copiedBytes = statSync(target).size;
-if (copiedBytes !== sourceBytes) {
-  throw new Error(
-    `copy mismatch: source is ${sourceBytes} bytes, copy is ${copiedBytes}`,
-  );
+if (!existsSync(source)) {
+  throw new Error(`entry.png not found next to main.ts (looked in ${here})`);
 }
 
-console.log(`entry.png delivered to ${target} (${copiedBytes} bytes)`);
+mkdirSync(outDir, { recursive: true });
+copyFileSync(source, target);
+
+const expected: number = statSync(source).size;
+const delivered: number = statSync(target).size;
+if (delivered !== expected) {
+  throw new Error(
+    `copy verification failed: wrote ${delivered} bytes, source is ${expected}`,
+  );
+}
+console.log(`delivered entry.png (${delivered} bytes) -> ${target}`);
